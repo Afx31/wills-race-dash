@@ -36,6 +36,26 @@ body {
 }
 
 
+.rpm-bar {
+  height: 20px;
+  background-color: green;
+  transition: width 0.3s ease-out, background-color 0.3s ease-out;
+}
+
+/* Define classes for different RPM bar colors */
+.rpm-bar.red {
+  background-color: red;
+}
+.rpm-bar.yellow {
+  background-color: yellow;
+}
+.rpm-bar.green {
+  background-color: green;
+}
+
+
+
+
 .top-panel-thousands-marks {
   display: grid;
   grid-template-columns: repeat(9, 1fr);
