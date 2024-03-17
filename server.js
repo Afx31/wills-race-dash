@@ -19,22 +19,22 @@ const serverConfig = {
   dataLogging: false
 };
 
-var tempLoggedData = {
-  rpm: 0,
-  speed: 0,
-  gear: 0,
-  voltage: 0,
-  iat: 0,
-  ect: 0,
-  tps: 0,
-  map: 0,
-  inj: 0,
-  ign: 0,
-  lambdaRatio: 0,
-  lambda: 0,
-  oilTemp: 0,
-  oilPressure: 0
-}
+// var tempLoggedData = {
+//   rpm: 0,
+//   speed: 0,
+//   gear: 0,
+//   voltage: 0,
+//   iat: 0,
+//   ect: 0,
+//   tps: 0,
+//   map: 0,
+//   inj: 0,
+//   ign: 0,
+//   lambdaRatio: 0,
+//   lambda: 0,
+//   oilTemp: 0,
+//   oilPressure: 0
+// }
 
 /* -------------------- Express redirect endpoint setup -------------------- */
 // app.get('/', (req, res) => {
@@ -65,22 +65,22 @@ setInterval(() => {
   socketio.emit('CANBusMessage', CanData);
 }, 100);
 
-if (serverConfig.lapTiming) {
-  setInterval(() => {
-    LapTiming.updateCurrentLap();
-    socketio.emit('LapTiming', LapTiming.currentLap);
-  }, 100);
+// if (serverConfig.lapTiming) {
+//   setInterval(() => {
+//     LapTiming.updateCurrentLap();
+//     socketio.emit('LapTiming', LapTiming.currentLap);
+//   }, 100);
 
-  setInterval(() => {
-    socketio.emit('LapStats', LapTiming.lastLap, LapTiming.bestLap, LapTiming.pbLap);
-  }, 10000);
-}
+//   setInterval(() => {
+//     socketio.emit('LapStats', LapTiming.lastLap, LapTiming.bestLap, LapTiming.pbLap);
+//   }, 10000);
+// }
 
-if (serverConfig.dataLogging) {
-  setInterval(() => {
-    socketio.emit('DataLogging', tempLoggedData);
-  }, 5000);
-}
+// if (serverConfig.dataLogging) {
+//   setInterval(() => {
+//     socketio.emit('DataLogging', tempLoggedData);
+//   }, 5000);
+// }
 //#endregion
 
 /* -------------------- Lap Timing -------------------- */
@@ -106,40 +106,51 @@ if (serverConfig.lapTiming) {
 /* -------------------- Data conversion -------------------- */
 // var prevOilPressure;
 // var prevOilTemp;
-function DataConversion() {
+function DataConversion(msgId) {
   if (serverConfig.currentCar === 'honda') {
-    if (CanData.tps === 65535)
+    if (CanData.tps === 65535) {
       CanData.tps = 0
-
-    // try the below IF first  
-    // Oil Temperature
-    // if (prevOilTemp !== CanData.oilTemp)
-    {
-      var A = 0.0014222095, B = 0.00023729017, C = 9.3273998E-8;
-      var oilTempResistance = CanData.oilTemp;
-
-      var kelvinTemp = 1 / (A + B * Math.log(oilTempResistance) + C * Math.pow(Math.log(oilTempResistance), 3));
-      var celsiusTemp = kelvinTemp - 273.15;
-      CanData.oilTemp = celsiusTemp.toFixed(2);
-      // prevOilTemp = celsiusTemp.toFixed(2);
     }
+    else if (msgId === 667 || msgId === 1639) {
+      // try the below IF first  
+      // Oil Temperature
+      // if (prevOilTemp !== CanData.oilTemp)
+      {
+        var A = 0.0014222095, B = 0.00023729017, C = 9.3273998E-8;
+        var oilTempResistance = CanData.oilTemp;
 
-    // Oil Pressure
-    // if (prevOilPressure !== CanData.oilPressure)
-    {
-      var oilPressureResistance = CanData.oilPressure / 819.2; // Specified by Hondata | convert from 'raw voltage' value
-      // Below values are all specified by Bosch for this combination oil temp/pressure sensor
-      var originalLow = 0; //0.5;
-      var originalHigh = 5; //4.5;
-      var desiredLow = -100; //0;
-      var desiredHigh = 1100; //1000;
+        var kelvinTemp = 1 / (A + B * Math.log(oilTempResistance) + C * Math.pow(Math.log(oilTempResistance), 3));
+        var celsiusTemp = kelvinTemp - 273.15;
+        CanData.oilTemp = celsiusTemp.toFixed(2);
+        // prevOilTemp = celsiusTemp.toFixed(2);
+      }
 
-      // Calculate the ratio of the original value's position within the original range
-      var ratio = (oilPressureResistance - originalLow) / (originalHigh - originalLow);
-      // Use this ratio to find the equivalent position within the desired range
-      var kPaValue = (ratio * (desiredHigh - desiredLow)) + desiredLow;
-      CanData.oilPressure = (kPaValue * 0.145038).toFixed(2); // Convert to psi
-      // prevOilPressure = (kPaValue * 0.145038).toFixed(2); // Convert to psi
+      // Oil Pressure
+      // if (prevOilPressure !== CanData.oilPressure)
+      {
+        var oilPressureResistance = CanData.oilPressure / 819.2; // Specified by Hondata | convert from 'raw voltage' value
+        // Below values are all specified by Bosch for this combination oil temp/pressure sensor
+        var originalLow = 0; //0.5;
+        var originalHigh = 5; //4.5;
+        var desiredLow = -100; //0;
+        var desiredHigh = 1100; //1000;
+
+        // Calculate the ratio of the original value's position within the original range
+        var ratio = (oilPressureResistance - originalLow) / (originalHigh - originalLow);
+        // Use this ratio to find the equivalent position within the desired range
+        var kPaValue = (ratio * (desiredHigh - desiredLow)) + desiredLow;
+        CanData.oilPressure = (kPaValue * 0.145038).toFixed(2); // Convert to psi
+        // prevOilPressure = (kPaValue * 0.145038).toFixed(2); // Convert to psi
+      }
+    }
+    else if (msgId === 660 || msgId === 1632) {
+      CanData.voltage.toFixed(1);
+    }
+    else if (msgId === 662 || msgId === 1634) {
+      CanData.map = (CanData.map / 10) / 2;
+    }
+    else if (msgId === 664 || msgId === 1636) {
+      CanData.lambdaRatio = (32768 / CanData.lambdaRatio).toFixed(2);
     }
   }
 
@@ -148,7 +159,7 @@ function DataConversion() {
   // }
 };
 
-/* -------------------- Data acquisition -------------------- */
+/* -------------------- Data logging -------------------- */
 function DataLogging() {
   // Reads in the data logging memory file
   // fs.readFile('data/datalog.json', 'utf8', (err, data) => {
@@ -179,67 +190,52 @@ function DataLogging() {
   }
 }
 
+/* ------------------ Data acquisition ------------------ */
 channel.addListener('onMessage', function(msg) {
-  var currentConfig = CanPIDConfig[serverConfig.currentCar];
-
-  for (var param in currentConfig) {
-    var config = currentConfig[param];
-
-    if (config.ids.includes(msg.id))
-      CanData[param] = msg.data.readUIntBE(config.offset, config.size);
+  switch(msg.id) {
+    case 660:
+    case 1632:
+      CanData.rpm = msg.data.readUIntBE(0, 2);
+      CanData.speed = msg.data.readUIntBE(2, 2);
+      CanData.gear = msg.data.readUIntBE(4, 1);
+      CanData.voltage = msg.data.readUIntBE(5, 1);
+      break;
+    case 661:
+    case 1633:
+      CanData.iat = msg.data.readUIntBE(0, 2);
+      CanData.ect = msg.data.readUIntBE(2, 2);
+      break;
+    case 662:
+    case 1634:
+      CanData.tps = msg.data.readUIntBE(0, 2);
+      CanData.map = msg.data.readUIntBE(2, 2);
+      break;
+    case 663:
+    case 1635:
+      CanData.inj = msg.data.readUIntBE(0, 2);
+      CanData.ign = msg.data.readUIntBE(2, 2);
+      break;
+    case 664:
+    case 1636:
+      CanData.lambdaRatio = msg.data.readUIntBE(0, 2);
+      CanData.lambda = msg.data.readUIntBE(2, 2);
+      break;
+    case 667:
+    case 1639:
+      CanData.oilTemp = msg.data.readUIntBE(0, 2);
+      CanData.oilPressure = msg.data.readUIntBE(2, 2);
+      break;
   }
-
-  DataConversion();
+  
+  DataConversion(msg.id);
 
   // TODO: Commented out here to test ONLY writing to the file when clicking the 'stop datalogging button'
   if (serverConfig.dataLogging)
     DataLogging();
 
-  // TESTING - Send data straight to UI. Will need to try this with live car data
-  // If this is used, make sure to comment out the socket emit on L47
+  // TESTING: If this is used, make sure to comment out the socket emit on L47
   // socketio.emit('CANBusMessage', CanData);
 });
-
-/* ------------------ OLD Data acquisition ------------------ */
-/*
-channel.addListener('onMessage', function(msg) {
-  // Rpm, speed, gear, voltage
-  if (msg.id === 660 || msg.id === 1632) {
-    CanData.rpm = msg.data.readUIntBE(0, 2);
-    CanData.speed = msg.data.readUIntBE(2, 2);
-    CanData.gear = msg.data.readUIntBE(4, 1);
-    CanData.voltage = msg.data.readUIntBE(5, 1);
-  }
-  
-  // Temperates - IAT, ECT
-  if (msg.id === 661 || msg.id === 1633) {
-    CanData.iat = msg.data.readUIntBE(0, 2);
-    CanData.ect = msg.data.readUIntBE(2, 2);
-  }
-  
-  // TPS, MAP
-  if (msg.id === 662 || msg.id === 1634) {
-    CanData.tps = msg.data.readUIntBE(0, 2);
-    CanData.map = msg.data.readUIntBE(2, 2);
-  if (CanData.tps === 65535)
-    CanData.tps = 0
- }
-
-  // Injector duration, Ignition advance
-  if (msg.id === 663 || msg.id === 1635) {
-    CanData.inj = msg.data.readUIntBE(0, 2);
-    CanData.ign = msg.data.readUIntBE(2, 2);
-  }
-
-  // Lambda Ratio, Lambda
-  if (msg.id === 664 || msg.id === 1636) {
-    CanData.lambdaRatio = msg.data.readUIntBE(0, 2);
-    CanData.lambda = msg.data.readUIntBE(2, 2);
-  }
-
-  console.log(CanData);
-});
-*/
 
 channel.start();
 server.listen(3000);

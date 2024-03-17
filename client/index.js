@@ -21,39 +21,46 @@ socket.on('CANBusMessage', (data) => {
   var oilPressure = document.getElementById('oilPressure');
 
   // RPM progressive bar
-  rpmBar.style.setProperty('max-width', '1920px', 'important'); //1582px
-  var rpmbarPercentage = (data.rpm / 9000) * 100; // = (currentRpm/redlineRpm) * 100
+  // OLD
+  // rpmBar.style.setProperty('max-width', '1920px', 'important'); //1582px
+  // var rpmbarPercentage = (data.rpm / 9000) * 100; // = (currentRpm/redlineRpm) * 100
+  // rpmBar.style.width = `${rpmbarPercentage}%`;
+  // NEW
+  rpmBar.style.width = ((data.rpm / 9000) * 100) + '%';
 
-  // TPS progressive bar
-  tpsBar.style.setProperty('max-height', '400px', 'important');
-
-  //TODO: This needs to be moved to backend
-  if (data.tps === 65535)
-    data.tps = 0;
+  // TPS progressive bar - MOVED THIS TO CSS
+  // tpsBar.style.setProperty('max-height', '400px', 'important');
 
   // Assign data to UI controls
-  rpmBar.style.width = `${rpmbarPercentage}%`;
-  tpsBar.style.height = `${data.tps}%`;
+  tpsBar.style.height = data.tps + '%';
   rpmNum.textContent = data.rpm;
   speed.textContent = data.speed;
   gear.textContent = data.gear;
-  voltage.textContent = (data.voltage / 10).toFixed(1); //TODO: This needs to be moved to backend
+  
+  // voltage.textContent = (data.voltage / 10).toFixed(1); //TODO: This needs to be moved to backend
+  voltage.textContent = data.voltage;
+  
   iat.textContent = data.iat;
   ect.textContent = data.ect;
   tps.textContent = data.tps;
-  map.textContent = (data.map / 10) / 2;
-  lambdaRatio.textContent = (32768 / data.lambdaRatio).toFixed(2); //TODO: This needs to be moved to backend
+    
+  // map.textContent = (data.map / 10) / 2;
+  map.textContent = data.map;
+  
+  // lambdaRatio.textContent = (32768 / data.lambdaRatio).toFixed(2); //TODO: This needs to be moved to backend
+  lambdaRatio.textContent = data.lambdaRatio;
+
   // inj.textContent = data.inj;
   // ign.textContent = data.ign;
   oilTemp.textContent = data.oilTemp;
   oilPressure.textContent = data.oilPressure;
 
   // RPM Bar colouring
-  var percentInt = parseInt(rpmBar.style.width);
-  if (percentInt > 85)
-    rpmBar.style.setProperty('background-color', 'red', 'important');
-  else if (percentInt > 60)
-    rpmBar.style.setProperty('background-color', 'yellow', 'important');
-  else
-    rpmBar.style.setProperty('background-color', 'green', 'important');
+  // var percentInt = parseInt(rpmBar.style.width);
+  // if (percentInt > 85)
+  //   rpmBar.style.setProperty('background-color', 'red', 'important');
+  // else if (percentInt > 60)
+  //   rpmBar.style.setProperty('background-color', 'yellow', 'important');
+  // else
+  //   rpmBar.style.setProperty('background-color', 'green', 'important');
 });
